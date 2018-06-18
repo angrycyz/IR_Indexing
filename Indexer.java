@@ -6,6 +6,7 @@ public class Indexer {
     private HashSet<Integer> fileMap = new HashSet<>();
     private HashSet<Integer> stopWords = new HashSet<>();
     private final String outputDir = "Terms";
+    private int totalDocNum = 0;
 
     public void parseStopWords(String path){
 
