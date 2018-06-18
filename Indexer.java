@@ -112,6 +112,7 @@ public class Indexer {
             while (input.hasNextLine()) {
                 String line = input.nextLine();
                 if (line.startsWith("</DOC>")) {
+                    totalDocNum += 1;
                     Tokenizer tokenizer = new Tokenizer();
                     indexing(tokenizer.tokenize(textBuffer, docID));
                     textBuffer.setLength(0);
