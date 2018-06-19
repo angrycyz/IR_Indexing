@@ -2,12 +2,12 @@ import java.util.*;
 import java.io.*;
 
 public class QueryProcessor {
-    private final String RESULT_PATH = "QueryResult.txt";
     private HashMap<Integer, Double> idfMap = new HashMap<>();
     private HashMap<Integer, String> docMap = new HashMap<>();
     public final String DOCMAP_PATH = "DocMap.txt";
     public final String IDFMAP_PATH = "IDFMap.txt";
     public final String OUTPUT_DIR = "../Terms";
+    private final String RESULT_PATH = "../QueryResult.txt";
     private int retrieveNum = 10;
 
     public void setRetrieveNum(int num) {
@@ -81,6 +81,13 @@ public class QueryProcessor {
     }
 
     public void processQuery(String path, String stopwordsPath) {
+
+        try {
+            PrintWriter printWriter = new PrintWriter(RESULT_PATH);
+        } catch(FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
         File queryFile = new File(path);
         HashSet<String> stopWords = getStopWords(stopwordsPath);
 
@@ -92,8 +99,14 @@ public class QueryProcessor {
             Scanner input = new Scanner(queryFile);
             while (input.hasNextLine()) {
                 String line = input.nextLine();
-                String[] tokens = getTokens(line);
-                search(tokens, stopWords);
+                int spaceIdx = line.trim().indexOf(" ");
+                if (spaceIdx == -1) {
+                    continue;
+                }
+                String queryNum = line.substring(0, spaceIdx - 1);
+                String query = line.substring(spaceIdx, line.length()).trim();
+                String[] tokens = getTokens(query);
+                search(tokens, stopWords, queryNum);
             }
             input.close();
             outputWriter.close();
@@ -103,7 +116,7 @@ public class QueryProcessor {
 
     }
 
-    public void search(String[] tokens, HashSet<String> stopWords) {
+    public void search(String[] tokens, HashSet<String> stopWords, String queryNum) {
 
         Map<Integer, Double> tfIdfMap = new TreeMap<>();
         Tokenizer tokenizer = new Tokenizer();
@@ -152,23 +165,42 @@ public class QueryProcessor {
                 e.printStackTrace();
             }
         }
-
-        System.out.println(tfIdfMap);
-        getKlargest(retrieveNum, tfIdfMap);
+        getKlargest(retrieveNum, tfIdfMap, queryNum);
     }
 
     /* if the docs keep changing, deleting, adding new one, we should use heap
      * otherwise we can also use sorted array/list
      */
-    public void getKlargest(int k, Map<Integer, Double> tfIdfMap) {
+    public void getKlargest(int k, Map<Integer, Double> tfIdfMap, String queryNum) {
+
+        Comparator<Map.Entry<Integer, Double>> scoreDescending = new Comparator<Map.Entry<Integer, Double>>() {
+            @Override
+            public int compare(Map.Entry<Integer, Double> o1, Map.Entry<Integer, Double> o2) {
+                if (o2.getValue() > o1.getValue()) {
+                    return 1;
+                } else if (o2.getValue() < o1.getValue()) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            }
+        };
+
+        List<Map.Entry<Integer, Double>> tfIdfList = new ArrayList<>(tfIdfMap.entrySet());
+
+        Collections.sort(tfIdfList, scoreDescending);
+
         try {
             int i = 0;
-            PrintWriter printWriter = new PrintWriter(RESULT_PATH);
-            for (Integer key: tfIdfMap.keySet()) {
+            PrintWriter printWriter = new PrintWriter(new FileOutputStream(RESULT_PATH,
+                    true));
+            printWriter.println("-----------" + "Query" + queryNum + "-----------");
+            for (Map.Entry<Integer, Double> entry: tfIdfList) {
                 if (i >= k) {
                     break;
                 }
-                printWriter.println(docMap.get(key));
+                printWriter.println(docMap.get(entry.getKey()));
+                i++;
             }
             printWriter.close();
         } catch(FileNotFoundException e) {
@@ -178,7 +210,7 @@ public class QueryProcessor {
 
     public static void main(String[] args) {
 
-        //../AP_DATA/ap89_collection
+        //../AP_DATA/query_desc.51-100.short.txt ../AP_DATA/stoplist.txt
         if (args.length == 0) {
             System.out.println("Please give the query path and stopwords path, separate by space...");
             Scanner scanner = new Scanner(System.in);
