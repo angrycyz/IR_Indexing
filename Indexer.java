@@ -4,24 +4,132 @@ import java.io.*;
 public class Indexer {
     private HashMap<Integer, List<TermInfo>> indexMap = new HashMap<>();
     private HashSet<Integer> fileMap = new HashSet<>();
-    private HashSet<Integer> stopWords = new HashSet<>();
-    private final String outputDir = "Terms";
+    private HashMap<Integer, Double> idfMap = new HashMap<>();
+    private HashMap<Integer, String> docMap = new HashMap<>();
+    private HashMap<Integer, Integer> idfDocMap = new HashMap<>();
+    public final String DOCMAP_PATH = "DocMap.txt";
+    public final String IDFMAP_PATH = "IDFMap.txt";
+    public final String OUTPUT_DIR = "../Terms";
     private int totalDocNum = 0;
 
-    public void parseStopWords(String path){
-
+    public void clearIndexMap() {
+        indexMap.clear();
     }
 
-    public void clearStopWords() {
-        stopWords.clear();
+    public void clearFileMap() {
+        fileMap.clear();
     }
+
+    public void clearIdfMap() {
+        idfMap.clear();
+    }
+
+    public void clearIdfDocMap() {
+        idfDocMap.clear();
+    }
+
+    public void clearDocMap() {
+        docMap.clear();
+    }
+
+    public double getIdf(int termID) {
+        return idfMap.get(termID);
+    }
+
+    public HashMap<Integer, Double> getIdfMap() {
+        return idfMap;
+    }
+
+    public void dumpDocMap() {
+        File directory = new File(OUTPUT_DIR);
+
+        /*create output directory */
+        if (!directory.exists()) {
+            directory.mkdir();
+        }
+
+        try {
+            PrintWriter outputWriter;
+            outputWriter = new PrintWriter(OUTPUT_DIR + "/" + DOCMAP_PATH);
+            outputWriter.print(docMap.toString());
+            outputWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        clearDocMap();
+    }
+
+
+    public void dumpIdfMap() {
+        File directory = new File(OUTPUT_DIR);
+
+        /*create output directory */
+        if (!directory.exists()) {
+            directory.mkdir();
+        }
+
+        try {
+            PrintWriter outputWriter;
+            outputWriter = new PrintWriter(OUTPUT_DIR + "/" + IDFMAP_PATH);
+            outputWriter.print(idfMap.toString());
+            outputWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        clearIdfMap();
+    }
+
+    public void calcIdfMap() {
+        for (int termID: idfDocMap.keySet()) {
+            idfMap.put(termID, Math.log(totalDocNum/idfDocMap.get(termID))/Math.log(2));
+        }
+        clearIdfDocMap();
+    }
+
+//    public void calcIdfFromDir() {
+//        File directory = new File(OUTPUT_DIR);
+//        File[] files = directory.listFiles();
+//
+//        if (files != null) {
+//            for (File file : files) {
+//                if (file.isFile()) {
+//                    System.out.println("Parsing " + file.getName() + "...");
+//                    calcIdfFromFile(file);
+//                }
+//            }
+//        } else {
+//            System.err.println("Invalid Path.");
+//        }
+//    }
+//
+//    public void calcIdfFromFile(File file) {
+//        HashMap<Integer, Integer> termDocMap = new HashMap<>();
+//        try {
+//            Scanner input = new Scanner(file);
+//            while (input.hasNextLine()) {
+//                String line = input.nextLine();
+//                int docID = Integer.parseInt(line.split(" ")[1]);
+//                termDocMap.put(docID, termDocMap.getOrDefault(docID, 0) + 1);
+//            }
+//            input.close();
+//
+//            for (int docID: termDocMap.keySet()) {
+//                idfMap.put(docID, Math.log(totalDocNum/termDocMap.get(docID))/Math.log(2));
+//            }
+//
+//        } catch(FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     public void deleteDir() {
-        File folder = new File(outputDir);
+        File folder = new File(OUTPUT_DIR);
         File[] files = folder.listFiles();
-        if(files!=null) { //some JVMs return null for empty dirs
+        if (files!=null) {
             for(File f: files) {
-                if(f.isDirectory()) {
+                if (f.isDirectory()) {
                     deleteDir();
                 } else {
                     f.delete();
@@ -32,7 +140,7 @@ public class Indexer {
     }
 
     public void dumpToDisk() {
-        File directory = new File(outputDir);
+        File directory = new File(OUTPUT_DIR);
 
         /*create output directory */
         if (!directory.exists()) {
@@ -52,11 +160,11 @@ public class Indexer {
                 PrintWriter outputWriter;
                 if (!fileMap.contains(termID)) {
                         outputWriter = new PrintWriter(
-                                outputDir + '/' + fileName + ".txt");
+                                OUTPUT_DIR + '/' + fileName + ".txt");
                         fileMap.add(termID);
                 } else {
                     outputWriter = new PrintWriter(
-                            new FileOutputStream(outputDir + '/' + fileName + ".txt",
+                            new FileOutputStream(OUTPUT_DIR + '/' + fileName + ".txt",
                                     true));
                 }
                 for (TermInfo termInfo: lst) {
@@ -73,18 +181,8 @@ public class Indexer {
 
     }
 
-    public void clearIndexMap() {
-        indexMap.clear();
-    }
-
-    public void clearFileMap() {
-        fileMap.clear();
-    }
-
     public void addToIndexMap(TermInfo termInfo) {
         int termID = termInfo.getTermID();
-
-        System.out.printf("termID %s\n", termID);
 
         if (!indexMap.containsKey(termID)) {
             indexMap.put(termID, new ArrayList<TermInfo>(){{add(termInfo);}});
@@ -95,6 +193,10 @@ public class Indexer {
 
 
     public void indexing(List<TermInfo> tokenSeq) {
+        if (tokenSeq.size() > 0) {
+            docMap.put(tokenSeq.get(0).getDocID(), tokenSeq.get(0).getDocNo());
+        }
+
         for (TermInfo termInfo: tokenSeq) {
             addToIndexMap(termInfo);
         }
@@ -114,7 +216,7 @@ public class Indexer {
                 if (line.startsWith("</DOC>")) {
                     totalDocNum += 1;
                     Tokenizer tokenizer = new Tokenizer();
-                    indexing(tokenizer.tokenize(textBuffer, docID));
+                    indexing(tokenizer.tokenize(textBuffer, docID, idfDocMap));
                     textBuffer.setLength(0);
                     docID = "";
                 }
@@ -131,6 +233,9 @@ public class Indexer {
                     textBuffer.append(line);
                 }
             }
+
+            input.close();
+
         } catch(FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -139,7 +244,6 @@ public class Indexer {
     public void parseFromDir(String dir) {
 
         deleteDir();
-        clearFileMap();
 
         File directory = new File(dir);
         File[] files = directory.listFiles();
@@ -154,6 +258,15 @@ public class Indexer {
         } else {
             System.err.println("Invalid Path.");
         }
+
+        calcIdfMap();
+
+        dumpDocMap();
+        dumpIdfMap();
+
+        clearFileMap();
+        clearIndexMap();
+
     }
 
     public static void main(String args[]){
