@@ -270,7 +270,7 @@ public class Indexer {
     }
 
     public static void main(String args[]){
-        //../test_dir
+        //../AP_DATA/ap89_collection
         if (args.length == 0) {
             System.out.println("Please give the corpus directory...");
             Scanner scanner = new Scanner(System.in);
