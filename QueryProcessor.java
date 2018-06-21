@@ -121,6 +121,8 @@ public class QueryProcessor {
         Map<Integer, Double> tfIdfMap = new TreeMap<>();
         Tokenizer tokenizer = new Tokenizer();
 
+        List<String> indexCollections = new ArrayList<>();
+
         for (String token: tokens) {
             if (stopWords.contains(token)) {
                 continue;
@@ -139,30 +141,36 @@ public class QueryProcessor {
                 fileName = Integer.toString(termID);
             }
 
+            /* take out from disk */
             try {
 //                System.out.println(fileName);
                 File file = new File(OUTPUT_DIR + "/" + fileName + ".txt");
                 Scanner input = new Scanner(file);
-                HashSet<Integer> proDocSet = new HashSet<>();
                 while (input.hasNextLine()) {
                     String line = input.nextLine();
-                    String[] lst = line.split(" ");
-                    double tf = Double.parseDouble(lst[2]);
-                    double idf = idfMap.get(Integer.parseInt(lst[0]));
-                    int docID = Integer.parseInt(lst[1]);
-
-                    if (!proDocSet.contains(docID)) {
-                        tfIdfMap.put(docID,
-                                tfIdfMap.getOrDefault(docID, 0.0)
-                                        + tf * idf);
-                        proDocSet.add(docID);
-                    }
+                    indexCollections.add(line);
                 }
 
                 input.close();
 
             } catch(FileNotFoundException e) {
                 e.printStackTrace();
+            }
+
+            /* search in memory */
+            for (String line: indexCollections){
+                HashSet<Integer> proDocSet = new HashSet<>();
+                String[] lst = line.split(" ");
+                double tf = Double.parseDouble(lst[2]);
+                double idf = idfMap.get(Integer.parseInt(lst[0]));
+                int docID = Integer.parseInt(lst[1]);
+
+                if (!proDocSet.contains(docID)) {
+                    tfIdfMap.put(docID,
+                            tfIdfMap.getOrDefault(docID, 0.0)
+                                    + tf * idf);
+                    proDocSet.add(docID);
+                }
             }
         }
         getKlargest(retrieveNum, tfIdfMap, queryNum);

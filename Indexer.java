@@ -12,23 +12,23 @@ public class Indexer {
     public final String OUTPUT_DIR = "../Terms";
     private int totalDocNum = 0;
 
-    public void clearIndexMap() {
+    private void clearIndexMap() {
         indexMap.clear();
     }
 
-    public void clearFileMap() {
+    private void clearFileMap() {
         fileMap.clear();
     }
 
-    public void clearIdfMap() {
+    private void clearIdfMap() {
         idfMap.clear();
     }
 
-    public void clearIdfDocMap() {
+    private void clearIdfDocMap() {
         idfDocMap.clear();
     }
 
-    public void clearDocMap() {
+    private void clearDocMap() {
         docMap.clear();
     }
 
@@ -40,7 +40,7 @@ public class Indexer {
         return idfMap;
     }
 
-    public void dumpDocMap() {
+    private void dumpDocMap() {
         File directory = new File(OUTPUT_DIR);
 
         /*create output directory */
@@ -61,7 +61,7 @@ public class Indexer {
     }
 
 
-    public void dumpIdfMap() {
+    private void dumpIdfMap() {
         File directory = new File(OUTPUT_DIR);
 
         /*create output directory */
@@ -81,7 +81,7 @@ public class Indexer {
         clearIdfMap();
     }
 
-    public void calcIdfMap() {
+    private void calcIdfMap() {
         for (int termID: idfDocMap.keySet()) {
             idfMap.put(termID, Math.log(totalDocNum/idfDocMap.get(termID))/Math.log(2));
         }
@@ -124,7 +124,7 @@ public class Indexer {
 //        }
 //    }
 
-    public void deleteDir() {
+    private void deleteDir() {
         File folder = new File(OUTPUT_DIR);
         File[] files = folder.listFiles();
         if (files!=null) {
@@ -139,7 +139,7 @@ public class Indexer {
         folder.delete();
     }
 
-    public void dumpToDisk() {
+    private void dumpToDisk() {
         File directory = new File(OUTPUT_DIR);
 
         /*create output directory */
@@ -181,7 +181,7 @@ public class Indexer {
 
     }
 
-    public void addToIndexMap(TermInfo termInfo) {
+    private void addToIndexMap(TermInfo termInfo) {
         int termID = termInfo.getTermID();
 
         if (!indexMap.containsKey(termID)) {
